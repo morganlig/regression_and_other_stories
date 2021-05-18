@@ -1,0 +1,134 @@
+---
+title: "Chapter 1 - Overview"
+author: "Morgan Grovenburg"
+date: "5/18/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      message = FALSE)
+```
+
+```{r libraries}
+# Install packages only once
+#install.packages("rstanarm")
+# install.packages("tidyverse")
+# install.packages("patchwork")
+
+# Load libraries used (not part of base R)
+library(rstanarm)
+library(tidyverse)
+library(patchwork)
+```
+
+```{r plot-func}
+glm_plot <- function(data){
+  data %>%
+    ggplot(aes(growth, vote)) +
+    geom_point() +
+    geom_abline(intercept = coeff[1], slope = coeff[2]) +
+    theme_classic() +
+    ylim(20, 80)
+}
+```
+
+# 1.2 Why learn regression? {.unnumbered}
+
+```{r, results= "hide"}
+hibbs <- read.table("hibbs.dat", header = TRUE)
+
+M1 <- stan_glm(vote ~ growth, data=hibbs)
+```
+
+```{r}
+coeff=coefficients(M1)
+# equation of the line : 
+eq = paste0("y = ", round(coeff[1],1), " + ", round(coeff[2],1), "*x")
+plot(hibbs$growth, hibbs$vote, xlab="Average recent growth in personal income", ylab="Incumbent party's vote share", main = eq) +
+  abline(coef(M1), col="gray")
+
+print(M1)
+
+p1 <- hibbs %>%
+  glm_plot() + 
+  labs(title = "Original")
+```
+
+# 1.8 Exercises {.unnumbered}
+
+## 1.2 *Sketching a regression model and data*: Figure 1.1b shows data corresponding to the fitted line $y = 46.3 + 3.0x$ with residual standard deviation $3.9$, and values of $x$ ranging roughly from $0$ to $4$%. {.unnumbered}
+
+### (a) Sketch hypothetical data with the same range of $x$ but corresponding to the line $y = 30 + 10x$ with residual standard deviation $3.9$. {.unnumbered}
+
+```{r a-data, results = "hide"}
+Ex1a <- tibble(vote = hibbs$vote+(30 - 46.3),
+               growth = hibbs$growth)
+Ex1a <- Ex1a %>%
+  mutate(vote = vote+((10-3)*growth))
+
+E1a <- stan_glm(vote ~ growth, data=Ex1a)
+```
+
+```{r a-plot}
+coeff=coefficients(E1a)
+# equation of the line : 
+eq = paste0("y = ", round(coeff[1],1), " + ", round(coeff[2],1), "*x")
+plot(Ex1a$growth, Ex1a$vote, main = eq) +
+  abline(coef(E1a), col="gray")
+
+print(E1a)
+
+pa <- Ex1a %>%
+  glm_plot() + 
+  labs(title = "(a)")
+
+p1 + pa
+```
+
+### (b) Sketch hypothetical data with the same range of $x$ but corresponding to the line $y = 30 + 10x$ with residual standard deviation $10$. {.unnumbered}
+
+```{r b-data, results = "hide"}
+#################
+# Same as (a)
+Ex1b <- tibble(vote = hibbs$vote+(30 - 46.3),
+               growth = hibbs$growth)
+Ex1b <- Ex1b %>%
+  mutate(vote = vote+((10-3)*growth))
+#################
+
+res1b <- ((Ex1b$vote - (30 + 10*Ex1b$growth))*(10/3.9))
+
+Ex1b <- Ex1b %>%
+  mutate(vote = (30 + 10*Ex1b$growth)+res1b)
+
+E1b <- stan_glm(vote ~ growth, data=Ex1b)
+```
+
+```{r b-plot}
+coeff=coefficients(E1b)
+# equation of the line : 
+eq = paste0("y = ", round(coeff[1],1), " + ", round(coeff[2],1), "*x")
+plot(Ex1b$growth, Ex1b$vote, main = eq) +
+  abline(coef(E1b), col="gray")
+
+print(E1b)
+
+pb <- Ex1b %>%
+  glm_plot() + 
+  labs(title = "(b)")
+
+pa + pb
+```
+
+## 1.5 *Goals of regression*: Give examples of applied statistics problems of interest to you in which the goals are: {.unnumbered}
+
+Explain your answers
+
+### (a) Forecasting/classification. {.unnumbered}
+
+### (b) Exploring associations. {.unnumbered}
+
+### (c) Extrapolation. {.unnumbered}
+
+### (d) Causal inference. {.unnumbered}
